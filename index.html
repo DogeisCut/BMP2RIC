@@ -1,0 +1,176 @@
+<input type="file" id="bmpInput" accept=".bmp"/>
+<script>
+document.getElementById('bmpInput').addEventListener('change', handleBMPFile);
+
+function handleBMPFile(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const arrayBuffer = e.target.result;
+            processBMP(arrayBuffer);
+        };
+        reader.readAsArrayBuffer(file);
+    }
+}
+
+function processBMP(buffer) {
+    const dataView = new DataView(buffer);
+
+    const pixelDataOffset = dataView.getUint32(10, true);
+    const width = dataView.getInt32(18, true);
+    const height = dataView.getInt32(22, true);
+    const bpp = dataView.getUint16(28, true);
+    
+    if (bpp !== 32) {
+        alert("Only 32-bit BMP files are supported.");
+        return;
+    }
+
+    const pixels = [];
+
+    const rowSize = Math.floor((bpp * width + 31) / 32) * 4;
+    for (let y = 0; y < height; y++) {
+        const row = [];
+        const rowOffset = pixelDataOffset + (height - 1 - y) * rowSize;
+
+        for (let x = 0; x < width; x++) {
+            const blue = dataView.getUint8(rowOffset + x * 4);
+            const green = dataView.getUint8(rowOffset + x * 4 + 1);
+            const red = dataView.getUint8(rowOffset + x * 4 + 2);
+            const alpha = dataView.getUint8(rowOffset + x * 4 + 3);
+            const color = (red << 24) | (green << 16) | (blue << 8) | alpha;
+            row.push(color);
+        }
+        pixels.push(row);
+    }
+
+    const rectangles = greedyMeshing(pixels);
+    const groupedRectangles = groupByColor(rectangles);
+
+    const finalString = formatGroupedRectangles(groupedRectangles, width, height);
+    console.log(finalString);
+}
+
+function rgbaToHex(rgba) {
+    const red = (rgba >> 24) & 0xFF;
+    const green = (rgba >> 16) & 0xFF;
+    const blue = (rgba >> 8) & 0xFF;
+    const alpha = rgba & 0xFF;
+    return `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}${blue.toString(16).padStart(2, '0')}${alpha.toString(16).padStart(2, '0')}`;
+}
+
+function greedyMeshing(grid) {
+    const height = grid.length;
+    const width = grid[0].length;
+
+    let visited = Array(height).fill().map(() => Array(width).fill(false));
+    let rectangles = [];
+
+    function findMaxRectangle(x, y, color) {
+        let maxX = x, maxY = y;
+
+        while (maxX + 1 < width && !visited[y][maxX + 1] && grid[y][maxX + 1] === color) {
+            maxX++;
+        }
+
+        let valid = true;
+        while (maxY + 1 < height && valid) {
+            for (let i = x; i <= maxX; i++) {
+                if (visited[maxY + 1][i] || grid[maxY + 1][i] !== color) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (valid) {
+                maxY++;
+            }
+        }
+
+        for (let i = x; i <= maxX; i++) {
+            for (let j = y; j <= maxY; j++) {
+                visited[j][i] = true;
+            }
+        }
+
+        return {
+            topLeft: [x, y],
+            bottomRight: [maxX, maxY],
+            color: rgbaToHex(color)
+        };
+    }
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            if (!visited[y][x]) {
+                const color = grid[y][x];
+				const alpha = color & 0xFF;
+				if (alpha == 0) continue;
+                const rectangle = findMaxRectangle(x, y, color);
+                rectangles.push(rectangle);
+            }
+        }
+    }
+
+    return rectangles;
+}
+
+function groupByColor(rectangles) {
+    const grouped = {};
+
+    rectangles.forEach(rect => {
+        const color = rect.color;
+        if (!grouped[color]) {
+            grouped[color] = [];
+        }
+        grouped[color].push({
+            topLeft: rect.topLeft,
+            bottomRight: rect.bottomRight
+        });
+    });
+
+    const sortedGrouped = {};
+    Object.keys(grouped).sort().forEach(color => {
+        sortedGrouped[color] = grouped[color];
+    });
+
+    return sortedGrouped;
+}
+
+function formatGroupedRectangles(groupedRectangles, width, height) {
+    const parts = [];
+	
+	let xScale = width/24 
+	let yScale = height/24
+
+    Object.keys(groupedRectangles).forEach(color => {
+        const rectangles = groupedRectangles[color];
+		let realColor = color
+		if (color == "#ffffffff") {
+			realColor = "#fffffeff"
+		}
+		if (color == "#000000ff") {
+			realColor = "#000001ff"
+		}
+
+        rectangles.forEach(rect => {
+            const x1 = rect.topLeft[0];
+            const y1 = rect.topLeft[1];
+            const x2 = rect.bottomRight[0]+1;
+            const y2 = rect.bottomRight[1]+1;
+
+            parts.push(`snip${x1}/${y1}/${x2}/${y2}`);
+        });
+
+        //parts.push(`flood${color}:flood${color}/false`);
+		parts.push(`rp#0000/${realColor}`);
+    });
+
+    // Join all parts into the final string format
+	if ((width == 24) && (height == 24)) {
+		return `pixel:m!pixel:` + parts.join(':') + ':rm#ffff';
+	} else {
+		return `pixel:m!pixel:scale${xScale}/${yScale}:` + parts.join(':') + ':rm#ffff';
+	}
+}
+</script>
