@@ -126,7 +126,7 @@
 </head>
 <body>
     <h1>BMP2RIC</h1>
-    Version 2.1
+    Version 2.1.1
     <div class="settings">
         <ul>
             <li>
@@ -176,7 +176,7 @@
                         <span class="info-icon" title="More information">ℹ️</span>
                         Use experiemental algorithm
                     </span>
-                    <div class="info-tooltip">Uses an experiemental algorithm rather than an greedy meshing. Also, this doesn't show the loading screen... for some reason.<!--<br>        
+                    <div class="info-tooltip">Uses an experiemental algorithm rather than an greedy meshing that so far has proven to reduce character count. Also, this doesn't show the loading screen... for some reason.<!--<br>        
                         Here's the idea:<br>
                         1. Pick a random pixel from the non processed pixels grid.<br>
                         2. Create a 1x1 rect there<br>
@@ -200,7 +200,7 @@
                                 <span class="info-icon" title="More information">ℹ️</span>
                                 Allow overlap
                             </span>
-                            <div class="info-tooltip">Allows the algorithm to use overlapping rects.</div>
+                            <div class="info-tooltip">Allows the algorithm to use overlapping rects, this can somtimes make great improvments to the character count.</div>
                         </div>
                     </li>
                     <li>
@@ -210,7 +210,7 @@
                                 <span class="info-icon" title="More information">ℹ️</span>
                                 Iterations
                             </span>
-                            <div class="info-tooltip">The number of iterations, high numbers acheive potentially better results, at the cost of process time.</div>
+                            <div class="info-tooltip">The number of iterations, higher numbers acheive potentially better results, at the cost of process time. I wouldn't suggest going past 50,000.</div>
                         </div>
                     </li>
                 </ul>
