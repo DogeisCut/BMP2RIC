@@ -115,22 +115,33 @@
             margin-left: -110px;
             opacity: 0;
             transition: opacity 0.3s;
+            pointer-events: none;
         }
 
         .info-container:hover .info-tooltip {
             visibility: visible;
             opacity: 1;
         }
+        
+        #fileName {
+            margin-left: 5px;
+            font-size: small;
+        }
+
+        #bmpInput {
+            display: none;
+        }
 
     </style>
 </head>
 <body>
     <h1>BMP2RIC</h1>
-    Version 2.1.1
+    Version 2.2
     <div class="settings">
         <ul>
             <li>
                 <input type="file" id="bmpInput" accept=".bmp"/>
+                <button id="bmpInputButton">Choose File</button><span id="fileName">No file chosen</span>
             </li>
             <li>
                 The default settings are designed to reduce the character count as much as possible.
@@ -176,7 +187,7 @@
                         <span class="info-icon" title="More information">ℹ️</span>
                         Use experiemental algorithm
                     </span>
-                    <div class="info-tooltip">Uses an experiemental algorithm rather than an greedy meshing that so far has proven to reduce character count. Also, this doesn't show the loading screen... for some reason.<!--<br>        
+                    <div class="info-tooltip">Uses an experiemental algorithm rather than an greedy meshing that so far has proven to reduce character count.<!--<br>        
                         Here's the idea:<br>
                         1. Pick a random pixel from the non processed pixels grid.<br>
                         2. Create a 1x1 rect there<br>
@@ -233,6 +244,11 @@
     
     <script>
         document.getElementById('expAlg').addEventListener('change', toggleExperimentalAlgorithm);
+        document.getElementById('bmpInputButton').addEventListener('click', uploadClick);
+
+        function uploadClick() {
+            document.getElementById('bmpInput').click()
+        }
 
         function toggleExperimentalAlgorithm() {
             const isExperimentalChecked = document.getElementById('expAlg').checked;
@@ -248,7 +264,7 @@
             }
         }
 
-        document.getElementById('bmpInput').addEventListener('change', handleBMPFile);
+        document.getElementById('bmpInput').addEventListener('input', handleBMPFile);
 
         function handleBMPFile(event) {
             const file = event.target.files[0];
@@ -257,9 +273,13 @@
                 reader.onload = function(e) {
                     const arrayBuffer = e.target.result;
                     showLoading(true);
-                    processBMP(arrayBuffer);
+                    setTimeout(() => {
+                        processBMP(arrayBuffer);
+                },  100);
                 };
                 reader.readAsArrayBuffer(file);
+                document.getElementById('fileName').innerHTML = file.name;
+                document.getElementById('bmpInput').value = '';
             }
         }
 
@@ -275,8 +295,8 @@
             const height = dataView.getInt32(22, true);
             const bpp = dataView.getUint16(28, true);
             
-            if (bpp !== 32) {
-                alert("Only 32-bit BMP files are supported.");
+            if (bpp !== 24 && bpp !== 32) {
+                alert("Only 24-bit and 32-bit BMP files are supported.");
                 showLoading(false);
                 return;
             }
@@ -288,10 +308,15 @@
                 const rowOffset = pixelDataOffset + (height - 1 - y) * rowSize;
 
                 for (let x = 0; x < width; x++) {
-                    const blue = dataView.getUint8(rowOffset + x * 4);
-                    const green = dataView.getUint8(rowOffset + x * 4 + 1);
-                    const red = dataView.getUint8(rowOffset + x * 4 + 2);
-                    const alpha = dataView.getUint8(rowOffset + x * 4 + 3);
+                    const blue = dataView.getUint8(rowOffset + x * (bpp / 8));
+                    const green = dataView.getUint8(rowOffset + x * (bpp / 8) + 1);
+                    const red = dataView.getUint8(rowOffset + x * (bpp / 8) + 2);
+
+                    let alpha = 255;
+                    if (bpp === 32) {
+                        alpha = dataView.getUint8(rowOffset + x * 4 + 3);
+                    }
+
                     const color = (red << 24) | (green << 16) | (blue << 8) | alpha;
                     row.push(color);
                 }
@@ -304,7 +329,9 @@
             const overlapCheckbox = document.getElementById('expAlgOverlap');
             const iterationsNumberbox = document.getElementById('expAlgIterations');
 
-            const rectangles = expAlgCheckbox.checked ? greedyMeshnt(pixels, overlapCheckbox.checked, Number(iterationsNumberbox.value)) : greedyMeshing(pixels);
+            const rectangles = expAlgCheckbox.checked 
+                ? greedyMeshnt(pixels, overlapCheckbox.checked, Number(iterationsNumberbox.value)) 
+                : greedyMeshing(pixels);
             const groupedRectangles = groupByColor(rectangles);
 
             const finalString = formatGroupedRectangles(groupedRectangles, width, height);
