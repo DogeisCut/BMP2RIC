@@ -736,15 +736,15 @@
             charCountElem.textContent = `Character Count: ${charCount}`;
 
             if (charCount > 4000) {
-                charWarningElem.textContent = "This will reach the maximum character length for use with the /render command, consider splitting this into multiple macros via =m mk.";
+                charWarningElem.textContent = "This will reach the maximum character length, consider splitting this into multiple macros via =m mk or uploading your render as a file via =file/=f.";
                 charWarningElem.className = 'warning show';
                 
             } else if (charCount > 3997) {
-                charWarningElem.textContent = "This will reach the maximum character length for Nitro users without the use of the /render command, consider using the /render command with the RIC user app.";
+                charWarningElem.textContent = "This will reach the maximum character length for Nitro users, consider uploading your render as a file via =file.";
                 charWarningElem.className = 'warning show';
                 
             } else if (charCount > 1997) {
-                charWarningElem.textContent = "This will reach the maximum character length for non-Nitro users without the use of the /render command, consider using the /render command with the RIC user app.";
+                charWarningElem.textContent = "This will reach the maximum character length for non-Nitro users, consider uploading your render as a file via =file or using /render with the RIC user app.";
                 charWarningElem.className = 'warning show';
             } else {
                 charWarningElem.textContent = "";

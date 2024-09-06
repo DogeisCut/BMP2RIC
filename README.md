@@ -27,3 +27,4 @@ If allow overlap is enabled, the algorithm when expanding will ignore same color
 - **2.1**: Added the experimental algorithm and its settings.
 - **2.1.1**: Adjusted the info descriptions of some of the experimental algorithm stuff.
 - **2.2**: 24 bit bmp support, fixed bug with uploading the same image twice, fixed loading screen.
+- **2.2.1**: Changed text length limit warnings to account for =file command
