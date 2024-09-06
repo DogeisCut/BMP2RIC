@@ -126,7 +126,7 @@
 </head>
 <body>
     <h1>BMP2RIC</h1>
-    Version 2.0
+    Version 2.1
     <div class="settings">
         <ul>
             <li>
@@ -168,6 +168,54 @@
                 </div>
             </input>
             </li>
+            </li>
+            <li>
+                <input type="checkbox" id="expAlg">
+                <div class="info-container">
+                    <span class="info-text">
+                        <span class="info-icon" title="More information">ℹ️</span>
+                        Use experiemental algorithm
+                    </span>
+                    <div class="info-tooltip">Uses an experiemental algorithm rather than an greedy meshing. Also, this doesn't show the loading screen... for some reason.<!--<br>        
+                        Here's the idea:<br>
+                        1. Pick a random pixel from the non processed pixels grid.<br>
+                        2. Create a 1x1 rect there<br>
+                        3. Check if expanding up would hit processed, the bounds, or other color pixels, if so, skip 4<br>
+                        4. Expand upwards<br>
+                        5. Check if expanding right would hit processed, the bounds, or other color pixels, if so, skip 6<br>
+                        6. Expand rightwards<br>
+                        7. Check if expanding down would hit processed, the bounds, or other color pixels, if so, skip 8<br>
+                        8. Expand downwards<br>
+                        9. Check if expanding left would hit processed, the bounds, or other color pixels, if so, skip 10<br>
+                        10. Expand leftwards<br>
+                        11. if all direction checks fail, finish the rectangle, mark the pixels as processed, and remove them from the non processed grid<br>
+                        12. repeat 1-11 until the non processed grid is empty<br>
+                        13. repeat 1-12 100 times and saving the rectangles only if the count is lower than the previous.--></div>
+                </div>
+                <ul>
+                    <li>
+                        <div class="info-container">
+                            <input type="checkbox" id="expAlgOverlap" disabled>
+                            <span class="info-text">
+                                <span class="info-icon" title="More information">ℹ️</span>
+                                Allow overlap
+                            </span>
+                            <div class="info-tooltip">Allows the algorithm to use overlapping rects.</div>
+                        </div>
+                    </li>
+                    <li>
+                        <input type="number" max="50000" min="1" value="10000" id="expAlgIterations" disabled>
+                        <div class="info-container">
+                            <span class="info-text">
+                                <span class="info-icon" title="More information">ℹ️</span>
+                                Iterations
+                            </span>
+                            <div class="info-tooltip">The number of iterations, high numbers acheive potentially better results, at the cost of process time.</div>
+                        </div>
+                    </li>
+                </ul>
+            </input>
+            </li>
         </ul>
     </div>
     <div class="preview-panel" id="previewPanel">
@@ -184,6 +232,22 @@
     <div class="loading" id="loadingScreen">Processing...</div>
     
     <script>
+        document.getElementById('expAlg').addEventListener('change', toggleExperimentalAlgorithm);
+
+        function toggleExperimentalAlgorithm() {
+            const isExperimentalChecked = document.getElementById('expAlg').checked;
+            const overlapCheckbox = document.getElementById('expAlgOverlap');
+            const iterationsNumberbox = document.getElementById('expAlgIterations');
+
+            if (isExperimentalChecked) {
+                overlapCheckbox.disabled = false;
+                iterationsNumberbox.disabled = false;
+            } else {
+                overlapCheckbox.disabled = true;
+                iterationsNumberbox.disabled = true;
+            }
+        }
+
         document.getElementById('bmpInput').addEventListener('change', handleBMPFile);
 
         function handleBMPFile(event) {
@@ -234,7 +298,13 @@
                 pixels.push(row);
             }
 
-            const rectangles = greedyMeshing(pixels);
+            showLoading(true);
+
+            const expAlgCheckbox = document.getElementById('expAlg');
+            const overlapCheckbox = document.getElementById('expAlgOverlap');
+            const iterationsNumberbox = document.getElementById('expAlgIterations');
+
+            const rectangles = expAlgCheckbox.checked ? greedyMeshnt(pixels, overlapCheckbox.checked, Number(iterationsNumberbox.value)) : greedyMeshing(pixels);
             const groupedRectangles = groupByColor(rectangles);
 
             const finalString = formatGroupedRectangles(groupedRectangles, width, height);
@@ -267,57 +337,57 @@
         }
 
         function updatePreview(pixels, width, height, rectangles) {
-    const previewSize = 500;
-    const aspectRatio = width / height;
-    
-    let scaledWidth, scaledHeight;
+            const previewSize = 500;
+            const aspectRatio = width / height;
+            
+            let scaledWidth, scaledHeight;
 
-    if (width > height) {
-        scaledWidth = previewSize;
-        scaledHeight = Math.round(previewSize / aspectRatio);
-    } else {
-        scaledHeight = previewSize;
-        scaledWidth = Math.round(previewSize * aspectRatio);
-    }
+            if (width > height) {
+                scaledWidth = previewSize;
+                scaledHeight = Math.round(previewSize / aspectRatio);
+            } else {
+                scaledHeight = previewSize;
+                scaledWidth = Math.round(previewSize * aspectRatio);
+            }
 
-    const previewImage = document.getElementById('previewImage');
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.createImageData(width, height);
-    const data = imageData.data;
+            const previewImage = document.getElementById('previewImage');
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
 
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            const color = pixels[y][x];
-            data[(y * width + x) * 4] = (color >> 24) & 0xFF; // Red
-            data[(y * width + x) * 4 + 1] = (color >> 16) & 0xFF; // Green
-            data[(y * width + x) * 4 + 2] = (color >> 8 ) & 0xFF; // Blue
-            data[(y * width + x) * 4 + 3] = color & 0xFF; // Alpha
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const color = pixels[y][x];
+                    data[(y * width + x) * 4] = (color >> 24) & 0xFF; // Red
+                    data[(y * width + x) * 4 + 1] = (color >> 16) & 0xFF; // Green
+                    data[(y * width + x) * 4 + 2] = (color >> 8 ) & 0xFF; // Blue
+                    data[(y * width + x) * 4 + 3] = color & 0xFF; // Alpha
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            previewImage.src = canvas.toDataURL();
+            previewImage.style.width = `${scaledWidth}px`;
+            previewImage.style.height = `${scaledHeight}px`;
+
+            const previewSVG = document.getElementById('previewSVG');
+            previewSVG.setAttribute('width', scaledWidth);
+            previewSVG.setAttribute('height', scaledHeight);
+            previewSVG.innerHTML = rectangles.map(rect => {
+                const x1 = rect.topLeft[0] * (scaledWidth / width);
+                const y1 = rect.topLeft[1] * (scaledHeight / height);
+                const x2 = (rect.bottomRight[0] + 1) * (scaledWidth / width);
+                const y2 = (rect.bottomRight[1] + 1) * (scaledHeight / height);
+
+                const color = rect.color;
+                const invertedColor = invertColor(color);
+
+                return `<rect x="${x1}" y="${y1}" width="${x2 - x1}" height="${y2 - y1}" fill="none" stroke="${invertedColor}" stroke-width="1"/>`;
+            }).join('');
         }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-    previewImage.src = canvas.toDataURL();
-    previewImage.style.width = `${scaledWidth}px`;
-    previewImage.style.height = `${scaledHeight}px`;
-
-    const previewSVG = document.getElementById('previewSVG');
-    previewSVG.setAttribute('width', scaledWidth);
-    previewSVG.setAttribute('height', scaledHeight);
-    previewSVG.innerHTML = rectangles.map(rect => {
-        const x1 = rect.topLeft[0] * (scaledWidth / width);
-        const y1 = rect.topLeft[1] * (scaledHeight / height);
-        const x2 = (rect.bottomRight[0] + 1) * (scaledWidth / width);
-        const y2 = (rect.bottomRight[1] + 1) * (scaledHeight / height);
-
-        const color = rect.color;
-        const invertedColor = invertColor(color);
-
-        return `<rect x="${x1}" y="${y1}" width="${x2 - x1}" height="${y2 - y1}" fill="none" stroke="${invertedColor}" stroke-width="1"/>`;
-    }).join('');
-}
 
         function greedyMeshing(grid) {
             const height = grid.length;
@@ -374,6 +444,204 @@
             return rectangles;
         }
 
+        // This is a random algorithm I came up with.
+        // Here's the idea:
+        // 1. Pick a random pixel from the non processed pixels grid.
+        // 2. Create a 1x1 rect there
+        // 3. Check if expanding up would hit processed, the bounds, or other color pixels, if so, skip 4
+        // 4. Expand upwards
+        // 5. Check if expanding right would hit processed, the bounds, or other color pixels, if so, skip 6
+        // 6. Expand rightwards
+        // 7. Check if expanding down would hit processed, the bounds, or other color pixels, if so, skip 8
+        // 8. Expand downwards
+        // 9. Check if expanding left would hit processed, the bounds, or other color pixels, if so, skip 10
+        // 10. Expand leftwards
+        // 11. if all direction checks fail, finish the rectangle, mark the pixels as processed, and remove them from the non processed grid
+        // 12. repeat 1-11 until the non processed grid is empty
+        // 13. repeat 1-12 100 times and saving the rectangles only if the count is lower than the previous.
+        function greedyMeshnt(grid, allowOverlap = true, iterations = 10000) {
+            function findRandomUnprocessedPixel(visited) {
+                const unprocessedPixels = [];
+                for (let y = 0; y < visited.length; y++) {
+                    for (let x = 0; x < visited[y].length; x++) {
+                        if (!visited[y][x]) {
+                            unprocessedPixels.push([y, x]);
+                        }
+                    }
+                }
+                if (unprocessedPixels.length === 0) return null;
+                const randomIndex = Math.floor(Math.random() * unprocessedPixels.length);
+                return unprocessedPixels[randomIndex];
+            }
+
+            const height = grid.length;
+            const width = grid[0].length;
+
+            const visited = Array.from({ length: height }, () => Array(width).fill(false));
+
+            // Mark fully transparent pixels as visited
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    if ((grid[y][x] & 0xFF) === 0) {
+                        visited[y][x] = true;
+                    }
+                }
+            }
+
+            let bestRectangles = [];
+            let bestCount = Infinity;
+
+            for (let attempt = 0; attempt < iterations; attempt++) {
+                const rectangles = [];
+                const localVisited = Array.from({ length: height }, () => Array(width).fill(false));
+
+                // Initialize localVisited with transparent pixels marked as visited
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        if ((grid[y][x] & 0xFF) === 0) {
+                            localVisited[y][x] = true;
+                        }
+                    }
+                }
+
+                while (true) {
+                    const startPixel = findRandomUnprocessedPixel(localVisited);
+                    if (!startPixel) break;
+
+                    const [startY, startX] = startPixel;
+                    const color = grid[startY][startX];
+                    let top = startY;
+                    let left = startX;
+                    let right = startX;
+                    let bottom = startY;
+
+                    // not the best way to do this but i ran into issues okay!?
+                    if (allowOverlap) {
+                        // Expand upwards
+                        while (top > 0 && grid[top - 1][left] === color) {
+                            top--;
+                        }
+
+                        // Expand rightwards
+                        let canExpandRight = true;
+                        while (canExpandRight && right < width - 1) {
+                            for (let y = top; y <= bottom; y++) {
+                                if (grid[y][right + 1] !== color) {
+                                    canExpandRight = false;
+                                    break;
+                                }
+                            }
+                            if (canExpandRight) {
+                                right++;
+                            }
+                        }
+
+                        // Expand downwards
+                        let canExpandDown = true;
+                        while (canExpandDown && bottom < height - 1) {
+                            for (let x = left; x <= right; x++) {
+                                if (grid[bottom + 1][x] !== color) {
+                                    canExpandDown = false;
+                                    break;
+                                }
+                            }
+                            if (canExpandDown) {
+                                bottom++;
+                            }
+                        }
+
+                        // Expand leftwards
+                        let canExpandLeft = true;
+                        while (canExpandLeft && left > 0) {
+                            for (let y = top; y <= bottom; y++) {
+                                if (grid[y][left - 1] !== color) {
+                                    canExpandLeft = false;
+                                    break;
+                                }
+                            }
+                            if (canExpandLeft) {
+                                left--;
+                            }
+                        }
+                    } else {
+                        // Expand upwards
+                        while (top > 0 && !localVisited[top - 1][left] && grid[top - 1][left] === color) {
+                            top--;
+                        }
+
+                        // Expand rightwards
+                        let canExpandRight = true;
+                        while (canExpandRight && right < width - 1) {
+                            for (let y = top; y <= bottom; y++) {
+                                if (localVisited[y][right + 1] || grid[y][right + 1] !== color) {
+                                    canExpandRight = false;
+                                    break;
+                                }
+                            }
+                            if (canExpandRight) {
+                                right++;
+                            }
+                        }
+
+                        // Expand downwards
+                        let canExpandDown = true;
+                        while (canExpandDown && bottom < height - 1) {
+                            for (let x = left; x <= right; x++) {
+                                if (localVisited[bottom + 1][x] || grid[bottom + 1][x] !== color) {
+                                    canExpandDown = false;
+                                    break;
+                                }
+                            }
+                            if (canExpandDown) {
+                                bottom++;
+                            }
+                        }
+
+                        // Expand leftwards
+                        let canExpandLeft = true;
+                        while (canExpandLeft && left > 0) {
+                            for (let y = top; y <= bottom; y++) {
+                                if (localVisited[y][left - 1] || grid[y][left - 1] !== color) {
+                                    canExpandLeft = false;
+                                    break;
+                                }
+                            }
+                            if (canExpandLeft) {
+                                left--;
+                            }
+                        }
+
+                        // Mark the rectangle as processed
+                        for (let y = top; y <= bottom; y++) {
+                            for (let x = left; x <= right; x++) {
+                                localVisited[y][x] = true;
+                            }
+                        }
+                    }
+
+                    // Mark the rectangle as processed
+                    for (let y = top; y <= bottom; y++) {
+                        for (let x = left; x <= right; x++) {
+                            localVisited[y][x] = true;
+                        }
+                    }
+
+                    rectangles.push({
+                        topLeft: [left, top],
+                        bottomRight: [right, bottom],
+                        color: rgbaToHex(color)
+                    });
+                }
+
+                if (rectangles.length < bestCount) {
+                    bestCount = rectangles.length;
+                    bestRectangles = rectangles;
+                }
+            }
+
+            return bestRectangles;
+        }
+
         function groupByColor(rectangles) {
             const grouped = {};
 
@@ -397,67 +665,67 @@
         }
 
         function formatGroupedRectangles(groupedRectangles, width, height) {
-        const parts = [];
-        
-        const autoPersistBox = document.getElementById('autoPersistBox');
-        const joiner = autoPersistBox.checked ? ';' : ':';
+            const parts = [];
+            
+            const autoPersistBox = document.getElementById('autoPersistBox');
+            const joiner = autoPersistBox.checked ? ';' : ':';
 
-        const autoEscapeBox = document.getElementById('autoEscapeBox');
-        const escaper = autoEscapeBox.checked ? '\\\/' : '/';
+            const autoEscapeBox = document.getElementById('autoEscapeBox');
+            const escaper = autoEscapeBox.checked ? '\\\/' : '/';
 
-        const modeSafteyBox = document.getElementById('modeSafteyBox');
-        
-        let xScale = width / 24;
-        let yScale = height / 24;
+            const modeSafteyBox = document.getElementById('modeSafteyBox');
+            
+            let xScale = width / 24;
+            let yScale = height / 24;
 
-        Object.keys(groupedRectangles).forEach(color => {
-            const rectangles = groupedRectangles[color];
-            let realColor = color;
-            if (color === "#ffffff") {
-                realColor = "#fffffe";
-            }
-            if (color === "#000000") {
-                realColor = "#000001";
-            }
+            Object.keys(groupedRectangles).forEach(color => {
+                const rectangles = groupedRectangles[color];
+                let realColor = color;
+                if (color === "#ffffff") {
+                    realColor = "#fffffe";
+                }
+                if (color === "#000000") {
+                    realColor = "#000001";
+                }
 
-            rectangles.forEach(rect => {
-                const x1 = rect.topLeft[0];
-                const y1 = rect.topLeft[1];
-                const x2 = rect.bottomRight[0] + 1;
-                const y2 = rect.bottomRight[1] + 1;
+                rectangles.forEach(rect => {
+                    const x1 = rect.topLeft[0];
+                    const y1 = rect.topLeft[1];
+                    const x2 = rect.bottomRight[0] + 1;
+                    const y2 = rect.bottomRight[1] + 1;
 
-                parts.push(`snip${x1}${escaper}${y1}${escaper}${x2}${escaper}${y2}`);
+                    parts.push(`snip${x1}${escaper}${y1}${escaper}${x2}${escaper}${y2}`);
+                });
+
+                parts.push(`rp#000${escaper}${realColor}`);
             });
 
-            parts.push(`rp#000${escaper}${realColor}`);
-        });
+            const finalString = `pixel${modeSafteyBox.checked ? `${joiner}m!pixel` : ''}${((width === 24) && (height === 24)) ? '' : `${joiner}scale${Math.ceil(xScale / 0.05) * 0.05}${escaper}${Math.ceil(yScale / 0.05) * 0.05}`}${joiner}` + parts.join(joiner) + `${joiner}rm#fff`;
 
-        const finalString = `pixel${modeSafteyBox.checked ? `${joiner}m!pixel` : ''}${((width === 24) && (height === 24)) ? '' : `${joiner}scale${Math.ceil(xScale / 0.05) * 0.05}${escaper}${Math.ceil(yScale / 0.05) * 0.05}`}${joiner}` + parts.join(joiner) + `${joiner}rm#fff`;
+            const charCountElem = document.getElementById('charCount');
+            const charWarningElem = document.getElementById('charWarning');
 
-        const charCountElem = document.getElementById('charCount');
-        const charWarningElem = document.getElementById('charWarning');
+            const charCount = finalString.length;
+            charCountElem.textContent = `Character Count: ${charCount}`;
 
-        const charCount = finalString.length;
-        charCountElem.textContent = `Character Count: ${charCount}`;
+            if (charCount > 4000) {
+                charWarningElem.textContent = "This will reach the maximum character length for use with the /render command, consider splitting this into multiple macros via =m mk.";
+                charWarningElem.className = 'warning show';
+                
+            } else if (charCount > 3997) {
+                charWarningElem.textContent = "This will reach the maximum character length for Nitro users without the use of the /render command, consider using the /render command with the RIC user app.";
+                charWarningElem.className = 'warning show';
+                
+            } else if (charCount > 1997) {
+                charWarningElem.textContent = "This will reach the maximum character length for non-Nitro users without the use of the /render command, consider using the /render command with the RIC user app.";
+                charWarningElem.className = 'warning show';
+            } else {
+                charWarningElem.textContent = "";
+                charWarningElem.className = 'warning';
+            }
 
-        if (charCount > 4000) {
-            charWarningElem.textContent = "This will reach the maximum character length for use with the /render command, consider splitting this into multiple macros via =m mk.";
-            charWarningElem.className = 'warning show';
-            
-        } else if (charCount > 3997) {
-            charWarningElem.textContent = "This will reach the maximum character length for Nitro users without the use of the /render command, consider using the /render command with the RIC user app.";
-            charWarningElem.className = 'warning show';
-            
-        } else if (charCount > 1997) {
-            charWarningElem.textContent = "This will reach the maximum character length for non-Nitro users without the use of the /render command, consider using the /render command with the RIC user app.";
-            charWarningElem.className = 'warning show';
-        } else {
-            charWarningElem.textContent = "";
-            charWarningElem.className = 'warning';
+            return finalString;
         }
-
-        return finalString;
-    }
     </script>
 </body>
 </html>
