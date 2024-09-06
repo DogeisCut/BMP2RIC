@@ -1,4 +1,14 @@
-<input type="file" id="bmpInput" accept=".bmp"/>
+<ul>
+    <li>
+        <input type="file" id="bmpInput" accept=".bmp"/>
+    </li>
+    <li>
+        <input type="checkbox" id="autoEscapeBox" checked>Auto-escape (\/)</input>
+    </li>
+    <li>
+        <input type="checkbox" id="autoPersistBox" checked>Auto-persist (;)</input>
+    </li>
+</ul>
 <script>
 document.getElementById('bmpInput').addEventListener('change', handleBMPFile);
 
@@ -139,6 +149,12 @@ function groupByColor(rectangles) {
 
 function formatGroupedRectangles(groupedRectangles, width, height) {
     const parts = [];
+
+    const autoPersistBox = document.getElementById('autoPersistBox');
+    const joiner = autoPersistBox.checked ? ';' : ':'
+
+    const autoEscapeBox = document.getElementById('autoEscapeBox');
+    const escaper = autoEscapeBox.checked ? '\\\/' : '/'
 	
 	let xScale = width/24 
 	let yScale = height/24
@@ -159,18 +175,18 @@ function formatGroupedRectangles(groupedRectangles, width, height) {
             const x2 = rect.bottomRight[0]+1;
             const y2 = rect.bottomRight[1]+1;
 
-            parts.push(`snip${x1}/${y1}/${x2}/${y2}`);
+            parts.push(`snip${x1}${escaper}${y1}${escaper}${x2}${escaper}${y2}`);
         });
 
         //parts.push(`flood${color}:flood${color}/false`);
-		parts.push(`rp#0000/${realColor}`);
+		parts.push(`rp#0000${escaper}${realColor}`);
     });
 
     // Join all parts into the final string format
 	if ((width == 24) && (height == 24)) {
-		return `pixel:m!pixel:` + parts.join(':') + ':rm#ffff';
+		return `pixel${joiner}` + parts.join(joiner) + `${joiner}rm#ffff`;
 	} else {
-		return `pixel:m!pixel:scale${xScale}/${yScale}:` + parts.join(':') + ':rm#ffff';
+		return `pixel${joiner}scale${Math.ceil(xScale/0.05)*0.05}${escaper}${Math.ceil(yScale/0.05)*0.05}${joiner}` + parts.join(joiner) + `${joiner}rm#ffff`;
 	}
 }
 </script>
