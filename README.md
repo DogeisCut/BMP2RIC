@@ -28,4 +28,4 @@ If allow overlap is enabled, the algorithm when expanding will ignore same color
 - **2.1.1**: Adjusted the info descriptions of some of the experimental algorithm stuff.
 - **2.2.0**: 24 bit bmp support, fixed bug with uploading the same image twice, fixed loading screen.
 - **2.2.1**: Changed text length limit warnings to account for =file command.
-- **2.2.2**: zminor style and text changes.
+- **2.2.2**: Minor style and text changes.
