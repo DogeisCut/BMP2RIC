@@ -62,6 +62,18 @@
         .loading.active {
             display: block;
         }
+        .loading-bar {
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .loading-bar-inner {
+            width: 0%;
+            height: 10px;
+            background-color: #007bff;
+            border-radius: 10px;
+        }
         .preview-panel svg {
             position: absolute;
             top: 0;
@@ -132,107 +144,116 @@
             display: none;
         }
 
+        td {
+            width: 100%;
+        }
+
     </style>
 </head>
 <body>
     <h1>BMP2RIC</h1>
-    Version 2.2.1
-    <div class="settings">
-        <ul>
-            <li>
-                <input type="file" id="bmpInput" accept=".bmp"/>
-                <button id="bmpInputButton">Choose File</button><span id="fileName">No file chosen</span>
-            </li>
-            <li>
-                The default settings are designed to reduce the character count as much as possible.
-            </li>
-            <li>
-                <input type="checkbox" id="autoEscapeBox">
-                <div class="info-container">
-                    <span class="info-text">
-                        <span class="info-icon" title="More information">ℹ️</span>
-                        Auto-escape
-                    </span>
-                    <div class="info-tooltip">Replaces all slashes with a blackslash slash combo, this allows it to function as an argument in macros.</div>
+    Version 2.2.2
+    <table>
+        <tr>
+            <td>
+                <div class="settings">
+                    <ul>
+                        <li>
+                            <input type="file" id="bmpInput" accept=".bmp"/>
+                            <button id="bmpInputButton">Choose File</button><span id="fileName">No file chosen</span>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="autoEscapeBox">
+                            <div class="info-container">
+                                <span class="info-text">
+                                    <span class="info-icon" title="More information">ℹ️</span>
+                                    Auto-escape
+                                </span>
+                                <div class="info-tooltip">Replaces all slashes with a blackslash slash combo, this allows it to function as an argument in macros.</div>
+                            </div>
+                        </input>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="autoPersistBox">
+                            <div class="info-container">
+                                <span class="info-text">
+                                    <span class="info-icon" title="More information">ℹ️</span>
+                                    Auto-persist
+                                </span>
+                                <div class="info-tooltip">Replaces all colons with semicolons, this retains the sprite when animated.</div>
+                            </div>
+                        </input>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="modeSafteyBox">
+                            <div class="info-container">
+                                <span class="info-text">
+                                    <span class="info-icon" title="More information">ℹ️</span>
+                                    Ensure rule mode saftey
+                                </span>
+                                <div class="info-tooltip">Makes the sprite work/look correct even in rule mode (=r)</div>
+                            </div>
+                        </input>
+                        </li>
+                        </li>
+                        <li>
+                            <input type="checkbox" id="expAlg">
+                            <div class="info-container">
+                                <span class="info-text">
+                                    <span class="info-icon" title="More information">ℹ️</span>
+                                    Use experiemental algorithm
+                                </span>
+                                <div class="info-tooltip">Uses an experiemental algorithm rather than an greedy meshing that so far has proven to reduce character count.<!--<br>        
+                                    Here's the idea:<br>
+                                    1. Pick a random pixel from the non processed pixels grid.<br>
+                                    2. Create a 1x1 rect there<br>
+                                    3. Check if expanding up would hit processed, the bounds, or other color pixels, if so, skip 4<br>
+                                    4. Expand upwards<br>
+                                    5. Check if expanding right would hit processed, the bounds, or other color pixels, if so, skip 6<br>
+                                    6. Expand rightwards<br>
+                                    7. Check if expanding down would hit processed, the bounds, or other color pixels, if so, skip 8<br>
+                                    8. Expand downwards<br>
+                                    9. Check if expanding left would hit processed, the bounds, or other color pixels, if so, skip 10<br>
+                                    10. Expand leftwards<br>
+                                    11. if all direction checks fail, finish the rectangle, mark the pixels as processed, and remove them from the non processed grid<br>
+                                    12. repeat 1-11 until the non processed grid is empty<br>
+                                    13. repeat 1-12 100 times and saving the rectangles only if the count is lower than the previous.--></div>
+                            </div>
+                            <ul>
+                                <li>
+                                    <div class="info-container">
+                                        <input type="checkbox" id="expAlgOverlap" disabled>
+                                        <span class="info-text">
+                                            <span class="info-icon" title="More information">ℹ️</span>
+                                            Allow overlap
+                                        </span>
+                                        <div class="info-tooltip">Allows the algorithm to use overlapping rects, this can somtimes make great improvments to the character count.</div>
+                                    </div>
+                                </li>
+                                <li>
+                                    <input type="number" max="50000" min="1" value="10000" id="expAlgIterations" disabled>
+                                    <div class="info-container">
+                                        <span class="info-text">
+                                            <span class="info-icon" title="More information">ℹ️</span>
+                                            Iterations
+                                        </span>
+                                        <div class="info-tooltip">The number of iterations, higher numbers acheive potentially better results, at the cost of process time. I wouldn't suggest going past 50,000.</div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </input>
+                        </li>
+                    </ul>
                 </div>
-            </input>
-            </li>
-            <li>
-                <input type="checkbox" id="autoPersistBox">
-                <div class="info-container">
-                    <span class="info-text">
-                        <span class="info-icon" title="More information">ℹ️</span>
-                        Auto-persist
-                    </span>
-                    <div class="info-tooltip">Replaces all colons with semicolons, this retains the sprite when animated.</div>
+            </td>
+            <td>
+                <div class="preview-panel" id="previewPanel">
+                    <svg id="previewSVG" width="0" height="0"></svg>
+                    <img id="previewImage" src="" alt="Preview will appear here" />
                 </div>
-            </input>
-            </li>
-            <li>
-                <input type="checkbox" id="modeSafteyBox">
-                <div class="info-container">
-                    <span class="info-text">
-                        <span class="info-icon" title="More information">ℹ️</span>
-                        Ensure rule mode saftey
-                    </span>
-                    <div class="info-tooltip">Makes the sprite work/look correct even in rule mode (=r)</div>
-                </div>
-            </input>
-            </li>
-            </li>
-            <li>
-                <input type="checkbox" id="expAlg">
-                <div class="info-container">
-                    <span class="info-text">
-                        <span class="info-icon" title="More information">ℹ️</span>
-                        Use experiemental algorithm
-                    </span>
-                    <div class="info-tooltip">Uses an experiemental algorithm rather than an greedy meshing that so far has proven to reduce character count.<!--<br>        
-                        Here's the idea:<br>
-                        1. Pick a random pixel from the non processed pixels grid.<br>
-                        2. Create a 1x1 rect there<br>
-                        3. Check if expanding up would hit processed, the bounds, or other color pixels, if so, skip 4<br>
-                        4. Expand upwards<br>
-                        5. Check if expanding right would hit processed, the bounds, or other color pixels, if so, skip 6<br>
-                        6. Expand rightwards<br>
-                        7. Check if expanding down would hit processed, the bounds, or other color pixels, if so, skip 8<br>
-                        8. Expand downwards<br>
-                        9. Check if expanding left would hit processed, the bounds, or other color pixels, if so, skip 10<br>
-                        10. Expand leftwards<br>
-                        11. if all direction checks fail, finish the rectangle, mark the pixels as processed, and remove them from the non processed grid<br>
-                        12. repeat 1-11 until the non processed grid is empty<br>
-                        13. repeat 1-12 100 times and saving the rectangles only if the count is lower than the previous.--></div>
-                </div>
-                <ul>
-                    <li>
-                        <div class="info-container">
-                            <input type="checkbox" id="expAlgOverlap" disabled>
-                            <span class="info-text">
-                                <span class="info-icon" title="More information">ℹ️</span>
-                                Allow overlap
-                            </span>
-                            <div class="info-tooltip">Allows the algorithm to use overlapping rects, this can somtimes make great improvments to the character count.</div>
-                        </div>
-                    </li>
-                    <li>
-                        <input type="number" max="50000" min="1" value="10000" id="expAlgIterations" disabled>
-                        <div class="info-container">
-                            <span class="info-text">
-                                <span class="info-icon" title="More information">ℹ️</span>
-                                Iterations
-                            </span>
-                            <div class="info-tooltip">The number of iterations, higher numbers acheive potentially better results, at the cost of process time. I wouldn't suggest going past 50,000.</div>
-                        </div>
-                    </li>
-                </ul>
-            </input>
-            </li>
-        </ul>
-    </div>
-    <div class="preview-panel" id="previewPanel">
-        <svg id="previewSVG" width="0" height="0"></svg>
-        <img id="previewImage" src="" alt="Preview will appear here" />
-    </div>
+            </td>
+        </tr>
+    </table>
     <div id="characterInfo">
         <p id="charCount">Character Count: 0</p>
         <p id="charWarning" class="warning"></p>
@@ -240,7 +261,13 @@
     <div class="output-field">
         <textarea id="outputField" readonly></textarea>
     </div>
-    <div class="loading" id="loadingScreen">Processing...</div>
+    <div class="loading" id="loadingScreen">
+        Processing...
+        <!--
+        <div class="loading-bar">
+            <progress class="loading-bar-inner" id="loadingBar" value="0" max="100"></progress>
+        </div>-->
+    </div>
     
     <script>
         document.getElementById('expAlg').addEventListener('change', toggleExperimentalAlgorithm);
@@ -284,7 +311,14 @@
         }
 
         function showLoading(visible) {
-            document.getElementById('loadingScreen').classList.toggle('active', visible);
+            const loadingScreen = document.getElementById('loadingScreen');
+            loadingScreen.classList.toggle('active', visible);
+            updateLoadingBar(0);
+        }
+
+        function updateLoadingBar(percentage) {
+            const loadingBarInner = document.getElementById('loadingBar');
+            loadingBarInner.value = percentage;
         }
 
         function processBMP(buffer) {
@@ -519,6 +553,7 @@
             let bestCount = Infinity;
 
             for (let attempt = 0; attempt < iterations; attempt++) {
+                updateLoadingBar(iterations/(attempt+1)*100);
                 const rectangles = [];
                 const localVisited = Array.from({ length: height }, () => Array(width).fill(false));
 
@@ -736,7 +771,7 @@
             charCountElem.textContent = `Character Count: ${charCount}`;
 
             if (charCount > 4000) {
-                charWarningElem.textContent = "This will reach the maximum character length, consider splitting this into multiple macros via =m mk or uploading your render as a file via =file/=f.";
+                charWarningElem.textContent = "This will reach the maximum character length, consider splitting this into multiple macros via =m mk or uploading your render as a file via =file.";
                 charWarningElem.className = 'warning show';
                 
             } else if (charCount > 3997) {
