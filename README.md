@@ -29,3 +29,4 @@ If allow overlap is enabled, the algorithm when expanding will ignore same color
 - **2.2.0**: 24 bit bmp support, fixed bug with uploading the same image twice, fixed loading screen.
 - **2.2.1**: Changed text length limit warnings to account for =file command.
 - **2.2.2**: Minor style and text changes.
+- **2.2.3**: The boxes in the preview now have slightly transparent fills to show overlap.

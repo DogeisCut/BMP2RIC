@@ -152,7 +152,7 @@
 </head>
 <body>
     <h1>BMP2RIC</h1>
-    Version 2.2.2
+    Version 2.2.3
     <table>
         <tr>
             <td>
@@ -446,7 +446,7 @@
                 const color = rect.color;
                 const invertedColor = invertColor(color);
 
-                return `<rect x="${x1}" y="${y1}" width="${x2 - x1}" height="${y2 - y1}" fill="none" stroke="${invertedColor}" stroke-width="1"/>`;
+                return `<rect x="${x1}" y="${y1}" width="${x2 - x1}" height="${y2 - y1}" fill="${invertedColor}33" stroke="${invertedColor}" stroke-width="1"/>`;
             }).join('');
         }
 
